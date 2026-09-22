@@ -253,12 +253,13 @@ func handleMockSocksConn(conn net.Conn, expectedUser, expectedPass string) {
 	var port [2]byte
 	_, _ = io.ReadFull(conn, port[:])
 
-	if cmd == 0x01 { // CONNECT
+	switch cmd {
+	case 0x01: // CONNECT
 		// Send success reply: 0x05 0x00 0x00 0x01 (IPv4 127.0.0.1:0)
 		_, _ = conn.Write([]byte{0x05, 0x00, 0x00, 0x01, 127, 0, 0, 1, 0x1f, 0x90})
 		// Echo server for testing
 		_, _ = io.Copy(conn, conn)
-	} else if cmd == 0x03 { // UDP ASSOCIATE
+	case 0x03: // UDP ASSOCIATE
 		// Bind a UDP listener for the mock
 		u, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP("127.0.0.1"), Port: 0})
 		if err != nil {

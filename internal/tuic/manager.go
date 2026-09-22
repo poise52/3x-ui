@@ -28,7 +28,6 @@ var (
 
 func GetManager() *Manager {
 	managerOnce.Do(func() {
-		cleanupLegacySidecar()
 		managerInstance = &Manager{
 			servers:      make(map[int]*managed),
 			lastStartErr: make(map[int]string),
@@ -140,35 +139,45 @@ type InboundTrafficDelta struct {
 }
 
 func (m *Manager) CollectTraffic() []InboundTrafficDelta {
+	inbounds, _ := m.CollectAllTraffic()
+	return inbounds
+}
+
+func (m *Manager) CollectClientTraffic() []ClientTrafficDelta {
+	_, clients := m.CollectAllTraffic()
+	return clients
+}
+
+func (m *Manager) CollectAllTraffic() ([]InboundTrafficDelta, []ClientTrafficDelta) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	var out []InboundTrafficDelta
+
+	var inbounds []InboundTrafficDelta
+	var clients []ClientTrafficDelta
+
 	for _, mg := range m.servers {
 		if mg.server != nil && mg.server.IsRunning() {
-			up, down := mg.server.CollectTotalTraffic()
+			up, down, cDeltas := mg.server.CollectAllTraffic()
 			if up > 0 || down > 0 {
-				out = append(out, InboundTrafficDelta{
+				inbounds = append(inbounds, InboundTrafficDelta{
 					Tag:  mg.tag,
 					Up:   up,
 					Down: down,
 				})
 			}
+			clients = append(clients, cDeltas...)
 		}
 	}
-	return out
+	return inbounds, clients
 }
 
-func (m *Manager) CollectClientTraffic() []ClientTrafficDelta {
+func (m *Manager) AddTestTraffic(id int, email string, up, down int64) bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	var allDeltas []ClientTrafficDelta
-	for _, mg := range m.servers {
-		if mg.server != nil && mg.server.IsRunning() {
-			deltas := mg.server.CollectClientTraffic()
-			allDeltas = append(allDeltas, deltas...)
-		}
+	if mg, ok := m.servers[id]; ok && mg.server != nil {
+		return mg.server.AddTestTraffic(email, up, down)
 	}
-	return allDeltas
+	return false
 }
 
 func (m *Manager) Remove(id int) {

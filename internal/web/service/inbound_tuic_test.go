@@ -216,3 +216,37 @@ func TestCheckForwardedPortsConflict_CollidesWithTuicSocksPort(t *testing.T) {
 		t.Fatalf("expected a collision naming the TUIC inbound's SOCKS5 relay port, got %q", hit)
 	}
 }
+
+func TestCheckTuicSocksConflict_DisabledInboundRetainsReservation(t *testing.T) {
+	setupConflictDB(t)
+	seedInboundConflict(t, "tuic-disabled", "0.0.0.0", 8443, model.TUIC, ``, `{"clients":[{"uuid":"u","password":"p","email":"e"}]}`)
+
+	var tuicIb model.Inbound
+	if err := database.GetDB().Where("tag = ?", "tuic-disabled").First(&tuicIb).Error; err != nil {
+		t.Fatalf("read seeded row: %v", err)
+	}
+	if err := database.GetDB().Model(&tuicIb).Update("enable", false).Error; err != nil {
+		t.Fatalf("disable inbound: %v", err)
+	}
+
+	relayPort := tuic.SOCKSPortForInbound(tuicIb.Id)
+
+	testIb := &model.Inbound{
+		Tag:      "conflict-test",
+		Protocol: model.VLESS,
+		Listen:   "127.0.0.1",
+		Port:     relayPort,
+		Enable:   true,
+	}
+
+	conflict, err := checkTuicSocksConflict(database.GetDB(), testIb, 0, transportTCP)
+	if err != nil {
+		t.Fatalf("checkTuicSocksConflict: %v", err)
+	}
+	if conflict == nil {
+		t.Fatal("expected conflict on disabled TUIC inbound's SOCKS port, got nil")
+	}
+	if conflict.InboundID != tuicIb.Id {
+		t.Fatalf("expected conflict with inbound %d, got %d", tuicIb.Id, conflict.InboundID)
+	}
+}

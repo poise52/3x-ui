@@ -147,3 +147,48 @@ func TestEnsureUpdatesTagWithoutRestart(t *testing.T) {
 		t.Fatalf("manager tag = %q, want %q", gotTag, "new-tag")
 	}
 }
+
+func TestCollectAllTraffic(t *testing.T) {
+	certPEM, keyPEM := generateTestCert(t)
+	pc, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	port := pc.LocalAddr().(*net.UDPAddr).Port
+	_ = pc.Close()
+
+	inst := Instance{
+		Id:          20,
+		Tag:         "tuic-20",
+		Listen:      "127.0.0.1",
+		Port:        port,
+		Certificate: string(certPEM),
+		PrivateKey:  string(keyPEM),
+		Clients:     []TuicClientSettings{{UUID: "a0000000-0000-0000-0000-000000000001", Password: "p", Email: "e1"}},
+	}
+
+	m := &Manager{servers: map[int]*managed{}, lastStartErr: map[int]string{}}
+	t.Cleanup(m.StopAll)
+
+	if err := m.Ensure(inst); err != nil {
+		t.Fatalf("Ensure failed: %v", err)
+	}
+
+	if !m.AddTestTraffic(20, "e1", 500, 1000) {
+		t.Fatal("AddTestTraffic failed")
+	}
+
+	inbounds, clients := m.CollectAllTraffic()
+	if len(inbounds) != 1 || inbounds[0].Up != 500 || inbounds[0].Down != 1000 {
+		t.Fatalf("unexpected inbounds: %+v", inbounds)
+	}
+	if len(clients) != 1 || clients[0].Up != 500 || clients[0].Down != 1000 || clients[0].Email != "e1" {
+		t.Fatalf("unexpected clients: %+v", clients)
+	}
+
+	// Subsequent call returns empty deltas
+	inbounds2, clients2 := m.CollectAllTraffic()
+	if len(inbounds2) != 0 || len(clients2) != 0 {
+		t.Fatalf("expected empty deltas after drain, got %+v, %+v", inbounds2, clients2)
+	}
+}

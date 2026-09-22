@@ -14,8 +14,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/mhsanaei/3x-ui/v3/internal/logger"
 	"github.com/quic-go/quic-go"
+
+	"github.com/mhsanaei/3x-ui/v3/internal/logger"
 )
 
 // Server is an in-process native Go TUIC v5 server terminating QUIC
@@ -102,7 +103,8 @@ func NewServer(inst Instance, relay *SocksRelay) (*Server, error) {
 
 // Start opens the UDP socket and starts the QUIC listener.
 func (s *Server) Start() error {
-	pConn, err := net.ListenPacket("udp", s.listenAddr)
+	var lc net.ListenConfig
+	pConn, err := lc.ListenPacket(s.ctx, "udp", s.listenAddr)
 	if err != nil {
 		return fmt.Errorf("tuic: listen packet on %s: %w", s.listenAddr, err)
 	}
@@ -163,10 +165,27 @@ func (s *Server) CollectTotalTraffic() (int64, int64) {
 	return totalUp, totalDown
 }
 
+// CollectAllTraffic drains client deltas once and returns total up, down and individual client deltas.
+func (s *Server) CollectAllTraffic() (int64, int64, []ClientTrafficDelta) {
+	deltas := s.users.CollectTrafficDeltas()
+	var totalUp, totalDown int64
+	for _, d := range deltas {
+		totalUp += d.Up
+		totalDown += d.Down
+	}
+	return totalUp, totalDown, deltas
+}
+
 func (s *Server) markActive(email string) {
 	if email != "" {
 		s.lastOnline.Store(email, time.Now())
 	}
+}
+
+// AddTestTraffic adds byte counts to a client for testing purposes.
+func (s *Server) AddTestTraffic(email string, up, down int64) bool {
+	s.markActive(email)
+	return s.users.AddTestTraffic(email, up, down)
 }
 
 func (s *Server) acceptLoop() {

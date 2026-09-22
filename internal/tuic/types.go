@@ -51,11 +51,7 @@ type Instance struct {
 }
 
 func (inst Instance) BindTo() string {
-	listen := inst.Listen
-	if listen == "" {
-		listen = "0.0.0.0"
-	}
-	return net.JoinHostPort(listen, strconv.Itoa(inst.Port))
+	return net.JoinHostPort(inst.Listen, strconv.Itoa(inst.Port))
 }
 
 func (inst Instance) StructuralFingerprint() string {

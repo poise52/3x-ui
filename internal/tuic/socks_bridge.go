@@ -52,6 +52,8 @@ func (r *SocksRelay) DialTCP(ctx context.Context, user string, target *Address) 
 		return nil, fmt.Errorf("tuic socks: dial relay %s: %w", r.Addr, err)
 	}
 
+	_ = conn.SetDeadline(time.Now().Add(10 * time.Second))
+
 	if err := socks5Handshake(conn, user, r.Password); err != nil {
 		conn.Close()
 		return nil, err
@@ -72,6 +74,8 @@ func (r *SocksRelay) DialTCP(ctx context.Context, user string, target *Address) 
 		conn.Close()
 		return nil, err
 	}
+
+	_ = conn.SetDeadline(time.Time{})
 
 	return conn, nil
 }
@@ -145,6 +149,8 @@ func (r *SocksRelay) DialUDP(ctx context.Context, user string) (*SocksUDPSession
 		return nil, fmt.Errorf("tuic socks: dial UDP control connection: %w", err)
 	}
 
+	_ = ctrl.SetDeadline(time.Now().Add(10 * time.Second))
+
 	if err := socks5Handshake(ctrl, user, r.Password); err != nil {
 		ctrl.Close()
 		return nil, err
@@ -161,6 +167,8 @@ func (r *SocksRelay) DialUDP(ctx context.Context, user string) (*SocksUDPSession
 		ctrl.Close()
 		return nil, err
 	}
+
+	_ = ctrl.SetDeadline(time.Time{})
 
 	udpConn, err := net.DialUDP("udp", nil, net.UDPAddrFromAddrPort(bind))
 	if err != nil {
@@ -405,12 +413,55 @@ func readSocks5Addr(r io.Reader, atyp byte) (netip.Addr, error) {
 	}
 }
 
+// halfCloseIdle bounds how long the surviving direction of a half-closed pair
+// may sit idle, so a peer that vanished mid-transfer cannot pin it forever.
+const halfCloseIdle = 2 * time.Minute
+
+type closeWriter interface {
+	CloseWrite() error
+}
+
+type readDeadliner interface {
+	SetReadDeadline(t time.Time) error
+}
+
+type guardedReader struct {
+	r     io.Reader
+	dl    readDeadliner
+	armed atomic.Bool
+}
+
+func newGuardedReader(r io.Reader) *guardedReader {
+	gr := &guardedReader{r: r}
+	if dl, ok := r.(readDeadliner); ok {
+		gr.dl = dl
+	}
+	return gr
+}
+
+func (g *guardedReader) Read(p []byte) (int, error) {
+	if g.armed.Load() && g.dl != nil {
+		_ = g.dl.SetReadDeadline(time.Now().Add(halfCloseIdle))
+	}
+	return g.r.Read(p)
+}
+
+func (g *guardedReader) arm() {
+	g.armed.Store(true)
+	if g.dl != nil {
+		_ = g.dl.SetReadDeadline(time.Now().Add(halfCloseIdle))
+	}
+}
+
 // PipeBiDirectional pipes data between two connections and tracks byte counts in each direction.
 func PipeBiDirectional(a, b io.ReadWriteCloser, upCounter, downCounter *atomic.Int64) {
+	ga := newGuardedReader(a)
+	gb := newGuardedReader(b)
+
 	var wg sync.WaitGroup
 	wg.Add(2)
 
-	pipe := func(dst io.Writer, src io.Reader, counter *atomic.Int64) {
+	pipe := func(dst io.Writer, dstGuard *guardedReader, src *guardedReader, counter *atomic.Int64) {
 		defer wg.Done()
 		buf := make([]byte, 32*1024)
 		for {
@@ -427,15 +478,18 @@ func PipeBiDirectional(a, b io.ReadWriteCloser, upCounter, downCounter *atomic.I
 				break
 			}
 		}
-		if cw, ok := dst.(interface{ CloseWrite() error }); ok {
+		if cw, ok := dst.(closeWriter); ok {
 			_ = cw.CloseWrite()
+		} else if closer, ok := dst.(io.Closer); ok {
+			_ = closer.Close()
 		}
+		dstGuard.arm()
 	}
 
 	// a -> b (upload: client to upstream)
-	go pipe(b, a, upCounter)
+	go pipe(b, gb, ga, upCounter)
 	// b -> a (download: upstream to client)
-	go pipe(a, b, downCounter)
+	go pipe(a, ga, gb, downCounter)
 
 	wg.Wait()
 	_ = a.Close()

@@ -64,3 +64,60 @@ func TestAddInboundTuicClientValidation(t *testing.T) {
 		t.Fatalf("expected 'empty client email' error, got %v", errNoEmail)
 	}
 }
+
+func TestTuicClientMutationsRequestRestart(t *testing.T) {
+	setupConflictDB(t)
+	inboundSvc := &InboundService{}
+	clientSvc := &ClientService{}
+
+	ib := &model.Inbound{
+		Tag:      "tuic-restart-test",
+		Protocol: model.TUIC,
+		Port:     54321,
+		Enable:   true,
+		Settings: `{
+			"certificate": "dummy-cert",
+			"private_key": "dummy-key",
+			"clients":[{"id":"a0000000-0000-0000-0000-000000000001","password":"p1","email":"user1@tuic.com","enable":true}]
+		}`,
+	}
+	created, _, err := inboundSvc.AddInbound(ib)
+	if err != nil {
+		t.Fatalf("AddInbound failed: %v", err)
+	}
+
+	// 1. Add client -> must return needRestart = true
+	addPayload := &model.Inbound{
+		Id:       created.Id,
+		Settings: `{"clients":[{"id":"a0000000-0000-0000-0000-000000000002","password":"p2","email":"user2@tuic.com","enable":true}]}`,
+	}
+	needRestart, err := clientSvc.AddInboundClient(inboundSvc, addPayload)
+	if err != nil {
+		t.Fatalf("AddInboundClient failed: %v", err)
+	}
+	if !needRestart {
+		t.Fatal("expected needRestart = true when adding TUIC client")
+	}
+
+	// 2. Update client -> must return needRestart = true
+	updatePayload := &model.Inbound{
+		Id:       created.Id,
+		Settings: `{"clients":[{"id":"a0000000-0000-0000-0000-000000000002","password":"new-p2","email":"user2@tuic.com","enable":true}]}`,
+	}
+	needRestart, err = clientSvc.UpdateInboundClient(inboundSvc, updatePayload, "user2@tuic.com")
+	if err != nil {
+		t.Fatalf("UpdateInboundClient failed: %v", err)
+	}
+	if !needRestart {
+		t.Fatal("expected needRestart = true when updating TUIC client")
+	}
+
+	// 3. Delete client -> must return needRestart = true
+	needRestart, err = clientSvc.DelInboundClientByEmail(inboundSvc, created.Id, "user2@tuic.com", false, true)
+	if err != nil {
+		t.Fatalf("DelInboundClientByEmail failed: %v", err)
+	}
+	if !needRestart {
+		t.Fatal("expected needRestart = true when deleting TUIC client")
+	}
+}

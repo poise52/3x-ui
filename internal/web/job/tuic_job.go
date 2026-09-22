@@ -32,12 +32,12 @@ func (j *TuicJob) Run() {
 	mgr := tuic.GetManager()
 	mgr.Reconcile(desired)
 
-	deltas := mgr.CollectTraffic()
+	inboundDeltas, clientDeltas := mgr.CollectAllTraffic()
 	onlineEmails, _ := mgr.GetActiveClients(30 * time.Second)
 
 	inboundUp := make(map[string]int64)
 	inboundDown := make(map[string]int64)
-	for _, d := range deltas {
+	for _, d := range inboundDeltas {
 		inboundUp[d.Tag] += d.Up
 		inboundDown[d.Tag] += d.Down
 	}
@@ -52,7 +52,6 @@ func (j *TuicJob) Run() {
 		})
 	}
 
-	clientDeltas := mgr.CollectClientTraffic()
 	clientTrafficMap := make(map[string]*xray.ClientTraffic, len(clientDeltas)+len(onlineEmails))
 	for _, cd := range clientDeltas {
 		clientTrafficMap[cd.Email] = &xray.ClientTraffic{

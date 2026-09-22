@@ -66,6 +66,20 @@ func (ur *UserRegistry) SetUsers(clients []TuicClientSettings) {
 	ur.users = newMap
 }
 
+// AddTestTraffic adds traffic counters to a user by email for testing purposes.
+func (ur *UserRegistry) AddTestTraffic(email string, up, down int64) bool {
+	ur.mu.RLock()
+	defer ur.mu.RUnlock()
+	for _, u := range ur.users {
+		if u.Email == email {
+			u.BytesUp.Add(up)
+			u.BytesDown.Add(down)
+			return true
+		}
+	}
+	return false
+}
+
 // ClientTrafficDelta represents the traffic delta for a user.
 type ClientTrafficDelta struct {
 	Email string
@@ -124,7 +138,7 @@ func (ur *UserRegistry) Authenticate(cs *tls.ConnectionState, rawUUID [16]byte, 
 	}
 
 	if err != nil && errStr != nil {
-		return nil, fmt.Errorf("%w: export keying material: %v", ErrAuthFailed, err)
+		return nil, fmt.Errorf("%w: export keying material: %w", ErrAuthFailed, err)
 	}
 
 	return nil, ErrAuthFailed
