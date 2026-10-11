@@ -9,6 +9,7 @@ import { KcpStreamSettingsSchema } from './kcp';
 import { SockoptStreamSettingsSchema } from './sockopt';
 import { TcpStreamSettingsSchema } from './tcp';
 import { WsStreamSettingsSchema } from './ws';
+import { XDriveStreamSettingsSchema } from './xdrive';
 import { XHttpStreamSettingsSchema } from './xhttp';
 
 export * from './external-proxy';
@@ -21,6 +22,7 @@ export * from './sockopt';
 export * from './tcp';
 export * from './ws';
 export * from './xhttp';
+export * from './xdrive';
 
 export const NetworkSchema = z.enum([
   'tcp',
@@ -30,6 +32,7 @@ export const NetworkSchema = z.enum([
   'httpupgrade',
   'xhttp',
   'hysteria',
+  'xdrive',
 ]);
 export type Network = z.infer<typeof NetworkSchema>;
 
@@ -53,6 +56,7 @@ const TransportNetworkSettingsSchema = z.discriminatedUnion('network', [
   }),
   z.object({ network: z.literal('xhttp'), xhttpSettings: XHttpStreamSettingsSchema }),
   z.object({ network: z.literal('hysteria'), hysteriaSettings: HysteriaStreamSettingsSchema }),
+  z.object({ network: z.literal('xdrive'), xdriveSettings: XDriveStreamSettingsSchema }),
 ]);
 
 // Wireguard (always a UDP listener) and Tunnel (dokodemo-door) expose no

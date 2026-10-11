@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/database"
@@ -47,7 +48,7 @@ func TestAddInbound_StoresXdnsMaskInObjectShape(t *testing.T) {
 		t.Fatalf("stored stream is not JSON: %v", err)
 	}
 	domain, ok := firstXdnsDomain(t, stream).(map[string]any)
-	if !ok || domain["name"] != "t.example.com" {
+	if !ok || fmt.Sprint(domain["names"]) != "[t.example.com]" {
 		t.Fatalf("stored xdns domain = %#v, want an object named t.example.com", firstXdnsDomain(t, stream))
 	}
 }

@@ -1,3 +1,4 @@
+import { normalizeXdnsFinalMask } from './xdns-mask';
 // Shapes the streamSettings subtree that 3x-ui persists to match what
 // xray-core actually consumes. The panel's Zod defaults mirror the full
 // SplitHTTPConfig / SockoptObject schema, but many fields are mode-specific
@@ -343,6 +344,8 @@ export function normalizeStreamSettingsForWire(
   opts: { side: StreamWireSide },
 ): Record<string, unknown> {
   const out: Record<string, unknown> = { ...stream };
+
+  if (out.finalmask) out.finalmask = normalizeXdnsFinalMask(out.finalmask);
 
   const xhttp = out.xhttpSettings;
   if (isRecord(xhttp)) {

@@ -821,6 +821,9 @@ func mergeStreamFromMaster(childStream, masterStream string) string {
 // (socks, http, mixed, wireguard, dokodemo, tunnel). The returned string may
 // contain multiple `\n`-separated URLs when the inbound has externalProxy set.
 func (s *SubService) GetLink(inbound *model.Inbound, email string) string {
+	if stream := unmarshalStreamSettings(inbound.StreamSettings); stream["network"] == "xdrive" {
+		return ""
+	}
 	switch inbound.Protocol {
 	case "vmess":
 		return s.genVmessLink(inbound, email)

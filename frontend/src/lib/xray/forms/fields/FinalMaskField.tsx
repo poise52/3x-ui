@@ -1,3 +1,4 @@
+import { normalizeXdnsFinalMask } from '@/lib/xray/xdns-mask';
 import { useEffect, useRef, useState } from 'react';
 import { Form } from 'antd';
 
@@ -22,7 +23,9 @@ export default function FinalMaskField({
   showAll,
 }: FinalMaskFieldProps) {
   const [form] = Form.useForm();
-  const [initial] = useState(() => value ?? EMPTY);
+  const [initial] = useState(
+    () => normalizeXdnsFinalMask(value ?? EMPTY) as FinalMaskStreamSettings,
+  );
   const onChangeRef = useRef(onChange);
   useEffect(() => {
     onChangeRef.current = onChange;

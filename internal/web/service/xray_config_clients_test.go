@@ -107,3 +107,22 @@ func TestGetXrayConfig_EnabledClientsStillEmitted(t *testing.T) {
 		t.Errorf("client id not carried through: %#v", entry)
 	}
 }
+
+func TestGetXrayConfig_XdriveOmitsStoredVisionFlow(t *testing.T) {
+	seedVlessInbound(t, "drive-flow", 43109, []model.Client{{Email: "drive@x", ID: "11111111-1111-1111-1111-111111111111", Enable: true, Flow: "xtls-rprx-vision"}})
+	if err := database.GetDB().Model(&model.Inbound{}).Where("tag = ?", "drive-flow").Update("stream_settings", `{"network":"xdrive","security":"none","xdriveSettings":{"service":"local","remoteFolder":"/tmp/shared"}}`).Error; err != nil {
+		t.Fatal(err)
+	}
+	value, _ := emittedClients(t, "drive-flow")
+	clients, ok := value.([]any)
+	if !ok || len(clients) != 1 {
+		t.Fatalf("clients = %#v, want the enabled drive client", value)
+	}
+	client := clients[0].(map[string]any)
+	if client["email"] != "drive@x" {
+		t.Fatalf("unexpected client: %#v", client)
+	}
+	if flow, _ := client["flow"].(string); flow != "" {
+		t.Fatalf("XDRIVE retained incompatible Vision flow: %q", flow)
+	}
+}

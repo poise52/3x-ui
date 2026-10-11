@@ -472,6 +472,18 @@
         "moreIssues": "{message}  (+{count} ещё)"
       },
       "form": {
+        "xdriveService": "Хранилище",
+        "xdriveTemplate": "HTTP-шаблон",
+        "xdriveLocal": "Локальные файлы",
+        "xdriveFolder": "Общая папка / ID папки",
+        "xdriveSecrets": "Секреты",
+        "xdriveSecretsHint": "Один секрет на строку: {secret0}, {secret1}, … Для Яндекс Диска: логин, затем пароль приложения с доступом к WebDAV.",
+        "xdriveYandexPreset": "Использовать шаблон Яндекс Диска WebDAV",
+        "xdriveTuning": "Интервалы и сегменты XDRIVE",
+        "xdriveHint": "Обеим сторонам нужны XDRIVE и общая папка. Используйте JSON-подписку Xray. HTTPS защищает запросы к хранилищу; для защиты сохранённого трафика включите VLESS Encryption. Создайте папку до подключения.",
+        "xdriveFolderRequired": "Укажите общую папку хранилища.",
+        "xdriveGoogleSecretsRequired": "Google Drive требует Client ID, Client Secret и Refresh Token.",
+        "xdriveTemplateRequired": "Укажите HTTP-шаблон хранилища.",
         "autoFill": "Автозаполнение",
         "echSockopt": "ECH Sockopt",
         "echSockoptTip": "Параметры сокета для соединения, через которое Xray получает список конфигураций ECH (например, можно направить запрос через исходящее dialerProxy). Оставьте отключённым для значений по умолчанию.",

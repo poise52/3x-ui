@@ -216,8 +216,8 @@ describe('OutboundFormModal', () => {
       {
         type: 'xdns',
         settings: {
-          domains: [{ name: 't.example.com', types: [16], edns0: 1232 }],
-          resolvers: [{ type: 'udp', settings: { addr: '8.8.8.8:53' } }],
+          domains: [{ names: ['t.example.com'], types: [16], edns0: 1232 }],
+          resolvers: [{ addrs: ['udp://8.8.8.8:53'] }],
         },
       },
     ]);

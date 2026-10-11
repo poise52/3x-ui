@@ -139,6 +139,7 @@ const NETWORK_SETTINGS_KEY: Record<string, string> = {
   httpupgrade: 'httpupgradeSettings',
   xhttp: 'xhttpSettings',
   hysteria: 'hysteriaSettings',
+  xdrive: 'xdriveSettings',
 };
 
 function healStreamNetworkKey(stream: Record<string, unknown>): void {

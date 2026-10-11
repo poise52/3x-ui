@@ -471,6 +471,18 @@
         "moreIssues": "{message}  (+{count} lỗi khác)"
       },
       "form": {
+        "xdriveService": "Storage service",
+        "xdriveTemplate": "HTTP template",
+        "xdriveLocal": "Local filesystem",
+        "xdriveFolder": "Shared folder / folder ID",
+        "xdriveSecrets": "Secrets",
+        "xdriveSecretsHint": "One secret per line: {secret0}, {secret1}, … For Yandex Disk: login, then app password with WebDAV access.",
+        "xdriveYandexPreset": "Use Yandex Disk WebDAV template",
+        "xdriveTuning": "XDRIVE timing and segment settings",
+        "xdriveHint": "Both peers need XDRIVE and the same storage folder. Share an Xray JSON subscription. HTTPS protects requests to storage; use VLESS Encryption to protect stored traffic. Create the folder before connecting.",
+        "xdriveFolderRequired": "Specify the shared storage folder.",
+        "xdriveGoogleSecretsRequired": "Google Drive needs Client ID, Client Secret and Refresh Token.",
+        "xdriveTemplateRequired": "Specify an HTTP storage template.",
         "echSockopt": "ECH Sockopt",
         "echSockoptTip": "Tùy chọn socket cho kết nối mà Xray dùng để lấy danh sách cấu hình ECH (ví dụ định tuyến truy vấn qua một outbound dialerProxy). Để tắt để dùng giá trị mặc định.",
         "curvePreferences": "Ưu tiên đường cong",

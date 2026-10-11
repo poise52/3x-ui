@@ -1280,7 +1280,7 @@ function XdnsSettings({ udpFieldName }: { udpFieldName: number }) {
                 size="small"
                 icon={<PlusOutlined />}
                 aria-label={t('add')}
-                onClick={() => add({ name: '', types: [16], edns0: XDNS_LEGACY_EDNS0 })}
+                onClick={() => add({ names: [], types: [16], edns0: XDNS_LEGACY_EDNS0 })}
               />
             </Form.Item>
             {domains.map((domain, di) => (
@@ -1296,8 +1296,8 @@ function XdnsSettings({ udpFieldName }: { udpFieldName: number }) {
                     onKeyDown={activateOnKey(() => remove(domain.name))}
                   />
                 </Divider>
-                <Form.Item label="Name" name={[domain.name, 'name']}>
-                  <Input placeholder="t.example.com" />
+                <Form.Item label="Names" name={[domain.name, 'names']}>
+                  <Select mode="tags" tokenSeparators={[',']} placeholder="t.example.com" />
                 </Form.Item>
                 <Form.Item
                   label="Record Types"
@@ -1329,23 +1329,19 @@ function XdnsSettings({ udpFieldName }: { udpFieldName: number }) {
                 size="small"
                 icon={<PlusOutlined />}
                 aria-label={t('add')}
-                onClick={() => add({ type: 'udp', settings: { addr: '' } })}
+                onClick={() => add({ addrs: [] })}
               />
             </Form.Item>
             {resolvers.map((resolver, ri) => (
               <Form.Item key={resolver.key} label={`Resolver ${ri + 1}`}>
                 <Space.Compact block>
-                  <Form.Item name={[resolver.name, 'type']} noStyle>
+                  <Form.Item name={[resolver.name, 'addrs']} noStyle>
                     <Select
-                      style={{ width: 80 }}
-                      options={[
-                        { value: 'udp', label: 'UDP' },
-                        { value: 'tcp', label: 'TCP' },
-                      ]}
+                      mode="tags"
+                      tokenSeparators={[',']}
+                      placeholder="udp://8.8.8.8:53"
+                      style={{ width: '100%' }}
                     />
-                  </Form.Item>
-                  <Form.Item name={[resolver.name, 'settings', 'addr']} noStyle>
-                    <Input placeholder="8.8.8.8:53" />
                   </Form.Item>
                   <Button
                     icon={<DeleteOutlined />}

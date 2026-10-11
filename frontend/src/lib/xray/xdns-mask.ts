@@ -79,3 +79,49 @@ export function upgradeLegacyXdnsMasks(udp: unknown[]): { next: unknown[]; chang
   });
   return { next, changed };
 }
+
+export function normalizeXdnsFinalMask(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const fm = value as Raw;
+  if (!Array.isArray(fm.udp)) return value;
+  const udp = upgradeLegacyXdnsMasks(fm.udp).next.map((entry) => {
+    if (!entry || typeof entry !== 'object') return entry;
+    const mask = entry as Raw;
+    if (
+      String(mask.type).toLowerCase() !== 'xdns' ||
+      !mask.settings ||
+      typeof mask.settings !== 'object'
+    )
+      return entry;
+    const settings = mask.settings as Raw;
+    const domains = Array.isArray(settings.domains)
+      ? settings.domains.map((entry: unknown) => {
+          if (!entry || typeof entry !== 'object') return entry;
+          const domain = entry as Raw;
+          if (typeof domain.name !== 'string') return domain;
+          const { name, ...rest } = domain;
+          return { ...rest, names: domain.names ?? [name] };
+        })
+      : settings.domains;
+    const resolvers = Array.isArray(settings.resolvers)
+      ? settings.resolvers.map((entry: unknown) => {
+          if (!entry || typeof entry !== 'object') return entry;
+          const resolver = entry as Raw;
+          const old = resolver.settings as Raw | undefined;
+          if (!old || typeof old.addr !== 'string') return resolver;
+          const { type, settings: _settings, ...rest } = resolver;
+          const addr = old.addr.includes('://') ? old.addr : `${type || 'udp'}://${old.addr}`;
+          return { ...rest, addrs: resolver.addrs ?? [addr] };
+        })
+      : settings.resolvers;
+    return {
+      ...mask,
+      settings: {
+        ...settings,
+        ...(domains ? { domains } : {}),
+        ...(resolvers ? { resolvers } : {}),
+      },
+    };
+  });
+  return { ...fm, udp };
+}

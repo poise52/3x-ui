@@ -1454,6 +1454,12 @@ export interface GenLinkInput {
 // goes through genWireguardLinks/Configs separately, http/mixed/tunnel
 // don't have share URLs).
 export function genLink(input: GenLinkInput): string {
+  if (
+    input.inbound.streamSettings &&
+    'network' in input.inbound.streamSettings &&
+    input.inbound.streamSettings.network === 'xdrive'
+  )
+    return '';
   const {
     inbound,
     address,

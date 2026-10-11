@@ -184,6 +184,9 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 	// still carry sessionPlacement/sessionKey; lift them too (same reason as
 	// the per-inbound lift below).
 	xrayConfig.OutboundConfigs = liftOutboundsXhttpSessionIDKeys(xrayConfig.OutboundConfigs)
+	xrayConfig.OutboundConfigs = rewriteOutboundStreams(xrayConfig.OutboundConfigs, func(stream map[string]any) bool {
+		return maskcompat.UpgradeXdnsFields(stream["finalmask"])
+	})
 	// Bridge amneziawg outbounds before anything else reads OutboundConfigs;
 	// the core has no amneziawg proxy and would reject the raw entry.
 	if err := transformAmneziaWGOutbounds(xrayConfig); err != nil {
@@ -208,6 +211,8 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		}
 		settings := map[string]any{}
 		_ = json.Unmarshal([]byte(inbound.Settings), &settings)
+		disableClientFlow := inbound.DisableFlow || (inbound.Protocol == model.VLESS &&
+			!inboundCanEnableTlsFlow(string(inbound.Protocol), inbound.StreamSettings, inbound.Settings))
 		var wireguardClientsByEmail map[string]model.Client
 		if inbound.Protocol == model.WireGuard {
 			inboundClients, _ := ParseInboundSettingsClients(inbound.Settings)
@@ -245,7 +250,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 			if flow == "xtls-rprx-vision-udp443" {
 				flow = "xtls-rprx-vision"
 			}
-			if inbound.DisableFlow {
+			if disableClientFlow {
 				flow = ""
 			}
 			entry := map[string]any{"email": c.Email}
@@ -377,7 +382,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 			}
 
 			// A row that skipped the save path can still carry the pre-26.9.30 xdns lists.
-			maskcompat.UpgradeLegacyXdns(stream["finalmask"])
+			maskcompat.UpgradeXdnsFields(stream["finalmask"])
 
 			// xray-core v26.6.22 (#6258) renamed the XHTTP session keys and
 			// kept no fallback. Lift legacy sessionPlacement/sessionKey onto the
@@ -1717,6 +1722,10 @@ func liftXhttpSessionIDKeys(stream map[string]any) bool {
 // returned untouched when nothing needs lifting, so an unchanged config never
 // looks modified to the hot-reload diff.
 func liftOutboundsXhttpSessionIDKeys(raw json_util.RawMessage) json_util.RawMessage {
+	return rewriteOutboundStreams(raw, liftXhttpSessionIDKeys)
+}
+
+func rewriteOutboundStreams(raw json_util.RawMessage, rewrite func(map[string]any) bool) json_util.RawMessage {
 	if len(raw) == 0 {
 		return raw
 	}
@@ -1727,7 +1736,7 @@ func liftOutboundsXhttpSessionIDKeys(raw json_util.RawMessage) json_util.RawMess
 	changed := false
 	for _, ob := range outbounds {
 		if stream, ok := ob["streamSettings"].(map[string]any); ok {
-			if liftXhttpSessionIDKeys(stream) {
+			if rewrite(stream) {
 				changed = true
 			}
 		}

@@ -54,6 +54,7 @@ import { WsStreamSettingsSchema } from '@/schemas/protocols/stream/ws';
 import { GrpcStreamSettingsSchema } from '@/schemas/protocols/stream/grpc';
 import { HttpUpgradeStreamSettingsSchema } from '@/schemas/protocols/stream/httpupgrade';
 import { XHttpStreamSettingsSchema } from '@/schemas/protocols/stream/xhttp';
+import XDriveForm from '@/lib/xray/forms/transport/XDriveForm';
 import { DateTimePicker } from '@/components/form';
 import { FinalMaskField } from '@/lib/xray/forms/fields';
 import './InboundFormModal.css';
@@ -212,6 +213,8 @@ function newStreamSlice(n: string): Record<string, unknown> {
       return GrpcStreamSettingsSchema.parse({});
     case 'httpupgrade':
       return HttpUpgradeStreamSettingsSchema.parse({});
+    case 'xdrive':
+      return { service: 'Google Drive', remoteFolder: '', secrets: ['', '', ''] };
     case 'xhttp':
       return XHttpStreamSettingsSchema.parse({});
     default:
@@ -865,6 +868,7 @@ export default function InboundFormModal({
       'grpcSettings',
       'httpupgradeSettings',
       'xhttpSettings',
+      'xdriveSettings',
     ];
     const current = (getV('streamSettings') as Record<string, unknown>) ?? {};
     const cleaned: Record<string, unknown> = { ...current, network: next };
@@ -872,6 +876,11 @@ export default function InboundFormModal({
       if (k !== `${next}Settings`) delete cleaned[k];
     }
     cleaned[`${next}Settings`] = newStreamSlice(next);
+    if (next === 'xdrive') {
+      cleaned.security = 'none';
+      delete cleaned.tlsSettings;
+      delete cleaned.realitySettings;
+    }
     if (next === 'kcp') {
       const fm = (cleaned.finalmask as Record<string, unknown> | undefined) ?? {};
       const udp = Array.isArray(fm.udp) ? (fm.udp as unknown[]) : [];
@@ -912,6 +921,7 @@ export default function InboundFormModal({
               { value: 'grpc', label: 'gRPC' },
               { value: 'httpupgrade', label: 'HTTPUpgrade' },
               { value: 'xhttp', label: 'XHTTP' },
+              { value: 'xdrive', label: 'XDRIVE' },
             ]}
           />
         </Form.Item>
@@ -931,6 +941,7 @@ export default function InboundFormModal({
           {network === 'grpc' && <GrpcForm />}
 
           {network === 'xhttp' && <XhttpForm />}
+          {network === 'xdrive' && <XDriveForm />}
 
           {network === 'httpupgrade' && <HttpUpgradeForm />}
 

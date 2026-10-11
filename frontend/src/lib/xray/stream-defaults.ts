@@ -6,6 +6,7 @@ import {
   TcpStreamSettingsSchema,
   WsStreamSettingsSchema,
   XHttpStreamSettingsSchema,
+  XDriveStreamSettingsSchema,
 } from '@/schemas/protocols/stream';
 import { RealityStreamSettingsSchema, TlsStreamSettingsSchema } from '@/schemas/protocols/security';
 
@@ -17,6 +18,7 @@ const NETWORK_KEY_MAP = {
   httpupgrade: 'httpupgradeSettings',
   xhttp: 'xhttpSettings',
   hysteria: 'hysteriaSettings',
+  xdrive: 'xdriveSettings',
 } as const;
 
 type SchemaWithParse = { safeParse: (v: unknown) => { success: boolean; data?: unknown } };
@@ -42,6 +44,8 @@ function networkSchemaFor(network: string): SchemaWithParse | null {
       return HttpUpgradeStreamSettingsSchema;
     case 'xhttp':
       return XHttpStreamSettingsSchema;
+    case 'xdrive':
+      return XDriveStreamSettingsSchema;
     case 'hysteria':
       return HysteriaStreamSettingsSchema;
     default:

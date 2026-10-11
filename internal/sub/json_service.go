@@ -16,6 +16,7 @@ import (
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
 	"github.com/mhsanaei/3x-ui/v3/internal/logger"
 	"github.com/mhsanaei/3x-ui/v3/internal/util/json_util"
+	"github.com/mhsanaei/3x-ui/v3/internal/util/maskcompat"
 	"github.com/mhsanaei/3x-ui/v3/internal/util/random"
 	wgutil "github.com/mhsanaei/3x-ui/v3/internal/util/wireguard"
 )
@@ -741,6 +742,7 @@ func (s *SubJsonService) streamData(stream string, clientKey string) map[string]
 			}
 		}
 	}
+	maskcompat.UpgradeXdnsFields(streamSettings["finalmask"])
 	return streamSettings
 }
 

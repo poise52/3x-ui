@@ -2,6 +2,7 @@ package database
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/database/model"
@@ -10,7 +11,7 @@ import (
 const legacyXdnsFinalmask = `{"udp":[{"type":"xdns","settings":{"domains":["t.example.com"]}}]}`
 
 // assertXdnsUpgraded fails unless the finalmask's xdns domains are objects, the only
-// shape xray-core 26.9.30 parses.
+// shape xray-core 26.10.10 parses.
 func assertXdnsUpgraded(t *testing.T, where string, finalmask any) {
 	t.Helper()
 	fm, _ := finalmask.(map[string]any)
@@ -25,7 +26,7 @@ func assertXdnsUpgraded(t *testing.T, where string, finalmask any) {
 		t.Fatalf("%s: domains = %v, want one entry", where, settings["domains"])
 	}
 	domain, ok := domains[0].(map[string]any)
-	if !ok || domain["name"] != "t.example.com" {
+	if !ok || fmt.Sprint(domain["names"]) != "[t.example.com]" {
 		t.Fatalf("%s: domain = %#v, want an object named t.example.com", where, domains[0])
 	}
 }
@@ -49,7 +50,7 @@ func TestXdnsFinalmaskSeederUpgradesEveryStoredMask(t *testing.T) {
 	if err := GetDB().Create(sub).Error; err != nil {
 		t.Fatalf("create outbound subscription: %v", err)
 	}
-	if err := GetDB().Where("seeder_name = ?", "XdnsFinalmaskObjectsFix").
+	if err := GetDB().Where("seeder_name IN ?", []string{"XdnsFinalmaskObjectsFix", "XdnsFinalmaskFieldsFix"}).
 		Delete(&model.HistoryOfSeeders{}).Error; err != nil {
 		t.Fatalf("clear seeder history: %v", err)
 	}

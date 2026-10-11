@@ -100,7 +100,7 @@ func TestParseLink_UpgradesLegacyXdnsFinalMask(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal finalmask: %v", err)
 	}
-	want := `{"udp":[{"settings":{"domains":[{"edns0":1232,"name":"t.example.com","types":[16]}],"resolvers":[{"settings":{"addr":"8.8.8.8:53"},"type":"udp"}]},"type":"xdns"}]}`
+	want := `{"udp":[{"settings":{"domains":[{"edns0":1232,"names":["t.example.com"],"types":[16]}],"resolvers":[{"addrs":["udp://8.8.8.8:53"]}]},"type":"xdns"}]}`
 	if string(got) != want {
 		t.Fatalf("imported finalmask\n got: %s\nwant: %s", got, want)
 	}

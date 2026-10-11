@@ -4,6 +4,7 @@ import { Form, Input, InputNumber, Modal, Radio, Select, Space, Tabs, message } 
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { FinalMaskField, SniffingField } from '@/lib/xray/forms/fields';
 import { FormField, rhfZodValidate } from '@/components/form/rhf';
+import XDriveForm from '@/lib/xray/forms/transport/XDriveForm';
 import { JsonEditor } from '@/components/form';
 import { Wireguard } from '@/utils';
 import { formValuesToWirePayload, rawOutboundToFormValues } from '@/lib/xray/outbound-form-adapter';
@@ -487,6 +488,7 @@ export default function OutboundFormModal({
                           {network === 'xhttp' && <XhttpForm onXmuxToggle={onXmuxToggle} />}
 
                           {network === 'hysteria' && <HysteriaForm />}
+                          {network === 'xdrive' && <XDriveForm />}
                         </>
                       )}
 

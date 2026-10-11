@@ -676,7 +676,7 @@ func canonicalizeLegacyXdnsMasks(streamSettings string) string {
 	if err := json.Unmarshal([]byte(streamSettings), &stream); err != nil {
 		return streamSettings
 	}
-	if !maskcompat.UpgradeLegacyXdns(stream["finalmask"]) {
+	if !maskcompat.UpgradeXdnsFields(stream["finalmask"]) {
 		return streamSettings
 	}
 	out, err := json.MarshalIndent(stream, "", "  ")

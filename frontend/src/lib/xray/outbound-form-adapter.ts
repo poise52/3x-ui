@@ -903,7 +903,11 @@ export function formValuesToWirePayload(values: OutboundFormValues): WireOutboun
       settings = vmessToWire(values.settings);
       break;
     case 'vless':
-      settings = vlessToWire(values.settings);
+      settings = vlessToWire(
+        values.streamSettings?.network === 'xdrive'
+          ? { ...values.settings, flow: '' }
+          : values.settings,
+      );
       break;
     case 'trojan':
       settings = trojanToWire(values.settings);

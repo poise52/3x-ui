@@ -55,6 +55,11 @@ export function newStreamSlice(network: string): Record<string, unknown> {
           xPaddingBytes: '100-1000',
         },
       };
+    case 'xdrive':
+      return {
+        network: 'xdrive',
+        xdriveSettings: { service: 'Google Drive', remoteFolder: '', secrets: ['', '', ''] },
+      };
     case 'hysteria':
       return {
         network: 'hysteria',
