@@ -1,6 +1,6 @@
 import { Base64 } from '@/utils';
 
-import { upgradeLegacyXdnsMasks } from './xdns-mask';
+import { normalizeXdnsFinalMask } from './xdns-mask';
 
 // Focused share-link parser for the OutboundFormModal's link-import
 // helper. Each parser returns a wire-shape outbound record (the same
@@ -281,8 +281,7 @@ function applyFinalMaskParam(stream: Raw, params: URLSearchParams): void {
       const parsed = JSON.parse(fm) as Record<string, unknown>;
       if (parsed && typeof parsed === 'object') {
         sanitizeFinalMaskQuicParams(parsed);
-        if (Array.isArray(parsed.udp)) parsed.udp = upgradeLegacyXdnsMasks(parsed.udp).next;
-        stream.finalmask = parsed;
+        stream.finalmask = normalizeXdnsFinalMask(parsed);
       }
     } catch {
       // malformed fm — leave streamSettings.finalmask absent

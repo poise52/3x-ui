@@ -227,7 +227,7 @@ describe('parseVlessLink — XHTTP advanced fields', () => {
 describe('parseVlessLink', () => {
   // A panel older than xray-core 26.9.30 shares xdns in the string lists the core no
   // longer parses, so an outbound imported verbatim would fail the whole config.
-  it('upgrades a legacy xdns fm= mask to the object shape', () => {
+  it('imports a legacy xdns fm= mask in the current core wire format', () => {
     const fm = encodeURIComponent(
       JSON.stringify({
         udp: [{ type: 'xdns', settings: { resolvers: ['t.example.com+udp://8.8.8.8:53'] } }],
@@ -240,8 +240,8 @@ describe('parseVlessLink', () => {
       udp: Array<{ settings: unknown }>;
     };
     expect(finalmask.udp[0].settings).toEqual({
-      domains: [{ name: 't.example.com', types: [16], edns0: 1232 }],
-      resolvers: [{ type: 'udp', settings: { addr: '8.8.8.8:53' } }],
+      domains: [{ names: ['t.example.com'], types: [16], edns0: 1232 }],
+      resolvers: [{ addrs: ['udp://8.8.8.8:53'] }],
     });
   });
 
