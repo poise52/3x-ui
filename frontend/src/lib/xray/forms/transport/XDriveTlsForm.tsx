@@ -4,11 +4,9 @@ import { MinusOutlined, PlusOutlined } from '@ant-design/icons';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { FormField } from '@/components/form/rhf';
 import { CipherSuitesSelect } from '@/components/form';
-import {
-  AlpnSchema,
-  TlsVersionSchema,
-  UtlsFingerprintSchema,
-} from '@/schemas/protocols/security/tls';
+import { TlsVersionSchema, UtlsFingerprintSchema } from '@/schemas/protocols/security/tls';
+
+import { XDriveAlpnSchema } from '@/schemas/protocols/stream/xdrive';
 
 const PATH = 'streamSettings.tlsSettings';
 
@@ -109,7 +107,7 @@ export default function XDriveTlsForm() {
       <FormField name={`${PATH}.alpn`} label="ALPN">
         <Select
           mode="multiple"
-          options={AlpnSchema.options.map((value) => ({ value, label: value }))}
+          options={XDriveAlpnSchema.options.map((value) => ({ value, label: value }))}
         />
       </FormField>
       <FormField

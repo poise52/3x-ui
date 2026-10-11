@@ -61,6 +61,11 @@ describe('XDRIVE configuration', () => {
     expect(result.certificates).toHaveLength(1);
     expect(result.certificates[0]).not.toHaveProperty('keyFile');
   });
+  it('rejects HTTP/3 ALPN unsupported by the XDRIVE service client', () => {
+    const result = XDriveTlsSettingsSchema.safeParse({ alpn: ['h3'] });
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error.issues[0].path).toEqual(['alpn', 0]);
+  });
   it('rejects empty trusted CA entries and reversed TLS version bounds', () => {
     const emptyCa = XDriveTlsSettingsSchema.safeParse({
       certificates: [{ usage: 'verify', useFile: false, certificate: [] }],

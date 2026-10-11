@@ -5,6 +5,8 @@ import {
   tlsCertUsesFiles,
 } from '../security/tls';
 
+export const XDriveAlpnSchema = z.enum(['h2', 'http/1.1']);
+
 const UInt32 = z.number().int().min(0).max(4294967295);
 const Operation = z.object({
   method: z.string().optional(),
@@ -110,6 +112,7 @@ export const XDriveTlsSettingsSchema = TlsStreamSettingsSchema.omit({
 })
   .extend({
     ...TlsClientSettingsSchema.shape,
+    alpn: z.array(XDriveAlpnSchema).default(['h2', 'http/1.1']),
     certificates: z.array(XDriveCaSchema).default([]),
   })
   .refine((settings) => Number(settings.minVersion) <= Number(settings.maxVersion), {
