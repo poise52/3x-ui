@@ -8,7 +8,11 @@ import {
   securitySettingsSchemaFor,
   tlsCertUsesFiles,
 } from '@/schemas/protocols/security';
-import { NetworkSettingsSchema, StreamExtrasSchema } from '@/schemas/protocols/stream';
+import {
+  NetworkSettingsSchema,
+  StreamExtrasSchema,
+  XDriveStreamFormSchema,
+} from '@/schemas/protocols/stream';
 
 // Inbound certificates must follow the selected editor mode. The shared wire
 // union also serves outbound TLS, where a client certificate is optional.
@@ -58,9 +62,14 @@ const InboundTlsSettingsSchema = TlsStreamSettingsSchema.extend({
 
 const InboundSecuritySettingsSchema = securitySettingsSchemaFor(InboundTlsSettingsSchema);
 
-export const InboundStreamFormSchema = NetworkSettingsSchema.and(InboundSecuritySettingsSchema).and(
-  StreamExtrasSchema,
-);
+export const InboundStreamFormSchema = z
+  .union([
+    NetworkSettingsSchema.and(InboundSecuritySettingsSchema).refine(
+      (stream) => stream.network !== 'xdrive',
+    ),
+    XDriveStreamFormSchema,
+  ])
+  .and(StreamExtrasSchema);
 export type InboundStreamFormValues = z.infer<typeof InboundStreamFormSchema>;
 
 export const TrafficResetSchema = z.enum(['never', 'hourly', 'daily', 'weekly', 'monthly']);

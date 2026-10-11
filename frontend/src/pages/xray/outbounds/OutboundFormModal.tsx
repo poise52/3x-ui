@@ -5,6 +5,7 @@ import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { FinalMaskField, SniffingField } from '@/lib/xray/forms/fields';
 import { FormField, rhfZodValidate } from '@/components/form/rhf';
 import XDriveForm from '@/lib/xray/forms/transport/XDriveForm';
+import XDriveTlsForm from '@/lib/xray/forms/transport/XDriveTlsForm';
 import { JsonEditor } from '@/components/form';
 import { Wireguard } from '@/utils';
 import { formValuesToWirePayload, rawOutboundToFormValues } from '@/lib/xray/outbound-form-adapter';
@@ -540,7 +541,9 @@ export default function OutboundFormModal({
                         </Form.Item>
                       )}
 
-                      {security === 'tls' && tlsAllowed && <TlsForm />}
+                      {security === 'tls' &&
+                        tlsAllowed &&
+                        (network === 'xdrive' ? <XDriveTlsForm /> : <TlsForm />)}
 
                       {security === 'reality' && realityAllowed && <RealityForm />}
 

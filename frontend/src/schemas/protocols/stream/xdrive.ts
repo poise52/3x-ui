@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import {
+  TlsClientSettingsSchema,
+  TlsStreamSettingsSchema,
+  tlsCertUsesFiles,
+} from '../security/tls';
 
 const UInt32 = z.number().int().min(0).max(4294967295);
 const Operation = z.object({
@@ -72,3 +77,54 @@ export const XDriveStreamSettingsSchema = z
       });
   });
 export type XDriveStreamSettings = z.infer<typeof XDriveStreamSettingsSchema>;
+
+const XDriveCaSchema = z
+  .object({
+    usage: z.literal('verify').default('verify'),
+    useFile: z.boolean().optional(),
+    certificateFile: z.string().default(''),
+    certificate: z.array(z.string()).default([]),
+    oneTimeLoading: z.boolean().default(false),
+  })
+  .superRefine((cert, ctx) => {
+    const useFile = tlsCertUsesFiles(cert);
+    if (!(useFile ? cert.certificateFile.trim() : cert.certificate.join('\n').trim())) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [useFile ? 'certificateFile' : 'certificate'],
+        message: 'pages.inbounds.form.tlsCertificateRequired',
+      });
+    }
+  })
+  .transform((cert) => {
+    const { useFile: _useFile, certificateFile, certificate, ...settings } = cert;
+    return tlsCertUsesFiles(cert) ? { ...settings, certificateFile } : { ...settings, certificate };
+  });
+
+export const XDriveTlsSettingsSchema = TlsStreamSettingsSchema.omit({
+  certificates: true,
+  settings: true,
+  rejectUnknownSni: true,
+  echServerKeys: true,
+  echSockopt: true,
+})
+  .extend({
+    ...TlsClientSettingsSchema.shape,
+    certificates: z.array(XDriveCaSchema).default([]),
+  })
+  .refine((settings) => Number(settings.minVersion) <= Number(settings.maxVersion), {
+    path: ['maxVersion'],
+    message: 'pages.inbounds.form.xdriveTlsVersionOrder',
+  });
+
+export const XDriveStreamFormSchema = z
+  .object({
+    network: z.literal('xdrive'),
+    xdriveSettings: XDriveStreamSettingsSchema,
+  })
+  .and(
+    z.discriminatedUnion('security', [
+      z.object({ security: z.literal('none') }),
+      z.object({ security: z.literal('tls'), tlsSettings: XDriveTlsSettingsSchema }),
+    ]),
+  );

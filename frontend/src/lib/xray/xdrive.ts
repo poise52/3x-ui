@@ -28,3 +28,18 @@ export function yandexDiskXDriveSettings(): XDriveStreamSettings {
     },
   };
 }
+export function xdriveClientTlsSettings(tls: Record<string, unknown>): Record<string, unknown> {
+  const settings = tls.settings;
+  const out = { ...(settings && typeof settings === 'object' ? settings : {}), ...tls } as Record<
+    string,
+    unknown
+  >;
+  delete out.settings;
+  if (Array.isArray(tls.certificates)) {
+    out.certificates = tls.certificates.filter(
+      (cert: unknown) =>
+        cert != null && typeof cert === 'object' && 'usage' in cert && cert.usage === 'verify',
+    );
+  }
+  return out;
+}

@@ -698,7 +698,9 @@ func (s *SubJsonService) streamData(stream string, clientKey string) map[string]
 	switch security {
 	case "tls":
 		if tlsSettings, ok := streamSettings["tlsSettings"].(map[string]any); ok {
-			streamSettings["tlsSettings"] = s.tlsData(tlsSettings)
+			if streamSettings["network"] != "xdrive" {
+				streamSettings["tlsSettings"] = s.tlsData(tlsSettings)
+			}
 		} else {
 			delete(streamSettings, "tlsSettings")
 		}

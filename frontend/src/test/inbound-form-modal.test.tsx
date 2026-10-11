@@ -303,6 +303,48 @@ describe('InboundFormModal', () => {
     expect(post).not.toHaveBeenCalled();
   });
 
+  it('saves XDRIVE client TLS without displaying server certificate controls', async () => {
+    const post = vi.mocked(HttpUtil.post);
+    post.mockClear();
+    renderCloneLikeEdit(
+      new DBInbound({
+        id: 42,
+        port: 41234,
+        protocol: 'vless',
+        enable: false,
+        settings: { clients: [], decryption: 'none', encryption: 'none' },
+        streamSettings: {
+          network: 'xdrive',
+          security: 'none',
+          xdriveSettings: { service: 'local', remoteFolder: 'shared' },
+        },
+      }),
+    );
+    fireEvent.click(screen.getByRole('tab', { name: 'Security' }));
+    const tls = screen.getByRole('radio', { name: 'TLS' });
+    expect(tls.hasAttribute('disabled')).toBe(false);
+    expect(screen.queryByRole('radio', { name: 'Reality' })).toBeNull();
+    fireEvent.click(tls);
+    fireEvent.change(await screen.findByLabelText('SNI'), {
+      target: { value: 'webdav.yandex.ru' },
+    });
+    expect(screen.queryByText('Certificate file path')).toBeNull();
+    fireEvent.click(primaryButton());
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith('/panel/api/inbounds/update/42', expect.anything()),
+    );
+    const payload = post.mock.calls.find(
+      ([url]) => url === '/panel/api/inbounds/update/42',
+    )?.[1] as { streamSettings: string };
+    const stream = JSON.parse(payload.streamSettings);
+    expect(stream).toMatchObject({
+      network: 'xdrive',
+      security: 'tls',
+      tlsSettings: { serverName: 'webdav.yandex.ru' },
+    });
+    expect(stream.tlsSettings).not.toHaveProperty('certificates');
+  });
+
   it('submits a valid clone-like Reality inbound', async () => {
     const post = vi.mocked(HttpUtil.post);
     post.mockClear();

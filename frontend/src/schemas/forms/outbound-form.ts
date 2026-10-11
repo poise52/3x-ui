@@ -4,7 +4,11 @@ import { PortSchema, SniffingSchema, type Sniffing } from '@/schemas/primitives'
 import { SSMethodSchema } from '@/schemas/protocols/shared/shadowsocks';
 import { VmessSecuritySchema } from '@/schemas/protocols/shared/vmess';
 import { SecuritySettingsSchema } from '@/schemas/protocols/security';
-import { NetworkSettingsSchema, StreamExtrasSchema } from '@/schemas/protocols/stream';
+import {
+  NetworkSettingsSchema,
+  StreamExtrasSchema,
+  XDriveStreamFormSchema,
+} from '@/schemas/protocols/stream';
 import {
   AmneziaWGOutboundSettingsSchema,
   BlackholeResponseTypeSchema,
@@ -221,8 +225,14 @@ export type MuxForm = z.infer<typeof MuxFormSchema>;
 // DU + extras (sockopt). Hysteria gets a side-channel branch in the modal
 // (legacy ob.stream.hysteria) — keeping the DU strict for now and routing
 // hysteria transport knobs through the Advanced JSON tab if needed.
-export const OutboundStreamFormSchema =
-  NetworkSettingsSchema.and(SecuritySettingsSchema).and(StreamExtrasSchema);
+export const OutboundStreamFormSchema = z
+  .union([
+    NetworkSettingsSchema.and(SecuritySettingsSchema).refine(
+      (stream) => stream.network !== 'xdrive',
+    ),
+    XDriveStreamFormSchema,
+  ])
+  .and(StreamExtrasSchema);
 export type OutboundStreamFormValues = z.infer<typeof OutboundStreamFormSchema>;
 
 // Top-level form base: identity (tag, sendThrough, targetStrategy), then

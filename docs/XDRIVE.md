@@ -14,6 +14,10 @@ Distribute an **Xray JSON subscription/configuration**. Portable VLESS share URI
 
 HTTPS encrypts storage API requests. Enable VLESS Encryption to protect the bytes stored in the shared folder. XTLS Vision flow is unavailable for XDRIVE in this panel. Treat storage credentials in a client configuration as access to that shared folder.
 
+Select TLS in Security to customize the storage API's SNI, uTLS, ALPN, ECH, certificate verification and pins on either peer. These are client TLS settings; no inbound server certificate is required. With Security set to None, HTTPS storage URLs still use TLS automatically. Xray v26.10.10 rejects REALITY for XDRIVE.
+
+Advanced TLS settings include cipher suites, minimum/maximum TLS versions, curves, root trust, session resumption and key logging. Trusted CA entries use `usage: verify` and require only the public certificate, either as inline PEM or a file path. Inline PEM travels with JSON subscriptions; file paths must exist independently on every peer. Leave root trust and negotiation defaults unchanged for normal public storage APIs.
+
 Timing fields are optional; leaving them empty uses Xray defaults. The Yandex preset uses 256 KiB segments, 100 ms flush, 300–1500 ms polling, concurrency 8, and a 120 s session TTL.
 
 The panel migrates old XDNS finalmask fields to the v26.10.10 layout, including saved inbounds, host overrides, Xray templates, subscription masks, and cached outbounds. TLS now uses the core's built-in root certificates by default; services requiring a private CA need explicit trust configuration.

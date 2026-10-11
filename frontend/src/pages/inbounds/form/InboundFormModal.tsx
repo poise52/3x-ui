@@ -55,6 +55,8 @@ import { GrpcStreamSettingsSchema } from '@/schemas/protocols/stream/grpc';
 import { HttpUpgradeStreamSettingsSchema } from '@/schemas/protocols/stream/httpupgrade';
 import { XHttpStreamSettingsSchema } from '@/schemas/protocols/stream/xhttp';
 import XDriveForm from '@/lib/xray/forms/transport/XDriveForm';
+import XDriveTlsForm from '@/lib/xray/forms/transport/XDriveTlsForm';
+import { xdriveClientTlsSettings } from '@/lib/xray/xdrive';
 import { DateTimePicker } from '@/components/form';
 import { FinalMaskField } from '@/lib/xray/forms/fields';
 import './InboundFormModal.css';
@@ -876,10 +878,15 @@ export default function InboundFormModal({
       if (k !== `${next}Settings`) delete cleaned[k];
     }
     cleaned[`${next}Settings`] = newStreamSlice(next);
-    if (next === 'xdrive') {
+    if (next === 'xdrive' && cleaned.security === 'reality') {
       cleaned.security = 'none';
       delete cleaned.tlsSettings;
       delete cleaned.realitySettings;
+    }
+    if (next === 'xdrive' && cleaned.security === 'tls') {
+      cleaned.tlsSettings = xdriveClientTlsSettings(
+        (cleaned.tlsSettings as Record<string, unknown>) ?? {},
+      );
     }
     if (next === 'kcp') {
       const fm = (cleaned.finalmask as Record<string, unknown> | undefined) ?? {};
@@ -994,7 +1001,8 @@ export default function InboundFormModal({
         </Radio.Group>
       </Form.Item>
 
-      {security === 'tls' && (
+      {security === 'tls' && network === 'xdrive' && <XDriveTlsForm />}
+      {security === 'tls' && network !== 'xdrive' && (
         <TlsForm
           saving={saving}
           setCertFromPanel={setCertFromPanel}

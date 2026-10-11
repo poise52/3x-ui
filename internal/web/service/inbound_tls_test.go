@@ -106,6 +106,26 @@ func TestAddInboundRejectsMissingTLSCertificates(t *testing.T) {
 	}
 }
 
+func TestAddInboundXdriveTLSNeedsNoServerCertificate(t *testing.T) {
+	setupConflictDB(t)
+	useTestRuntimeManager(t).SetLocalRuntimeOverride(&fakeNodeRuntime{})
+	inbound := &model.Inbound{
+		Tag: "xdrive-tls", Enable: true, Listen: "127.0.0.1", Port: 44313,
+		Protocol: model.VLESS, Settings: `{"clients":[],"decryption":"none"}`,
+		StreamSettings: `{"network":"xdrive","security":"tls","tlsSettings":{"fingerprint":"chrome","certificates":[{"usage":"verify","certificate":["public-ca"]}]},"xdriveSettings":{"service":"local","remoteFolder":"shared"}}`,
+	}
+	if _, _, err := (&InboundService{}).AddInbound(inbound); err != nil {
+		t.Fatal(err)
+	}
+	var saved model.Inbound
+	if err := database.GetDB().First(&saved, inbound.Id).Error; err != nil {
+		t.Fatal(err)
+	}
+	if saved.StreamSettings != inbound.StreamSettings {
+		t.Fatalf("stored stream = %s, want %s", saved.StreamSettings, inbound.StreamSettings)
+	}
+}
+
 func TestUpdateInboundRejectsMissingTLSCertificates(t *testing.T) {
 	setupConflictDB(t)
 	mgr := useTestRuntimeManager(t)

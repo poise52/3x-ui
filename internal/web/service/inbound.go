@@ -717,6 +717,8 @@ func validateInboundTLSCertificates(streamSettings string) error {
 		return nil
 	}
 	var stream struct {
+		Network     string          `json:"network"`
+		Method      string          `json:"method"`
 		Security    string          `json:"security"`
 		TLSSettings json.RawMessage `json:"tlsSettings"`
 	}
@@ -762,7 +764,11 @@ func validateInboundTLSCertificates(streamSettings string) error {
 		}
 		hasServerCertificate = true
 	}
-	if !hasServerCertificate {
+	network := stream.Network
+	if stream.Method != "" {
+		network = stream.Method
+	}
+	if !hasServerCertificate && !strings.EqualFold(network, "xdrive") {
 		return common.NewError("TLS requires a server certificate and private key. Configure an encipherment or issue certificate before saving the inbound.")
 	}
 	return nil

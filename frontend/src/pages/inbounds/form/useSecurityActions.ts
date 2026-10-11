@@ -6,6 +6,7 @@ import type { HookAPI as ModalHookAPI } from 'antd/es/modal/useModal';
 
 import { HttpUtil, RandomUtil } from '@/utils';
 import { createTlsSettingsWithDefaultCert } from '@/lib/xray/inbound-tls-defaults';
+import { XDriveTlsSettingsSchema } from '@/schemas/protocols/stream/xdrive';
 import { RealityStreamSettingsSchema } from '@/schemas/protocols/security/reality';
 import type { InboundFormValues } from '@/schemas/forms/inbound-form';
 import type { RealityScanResult } from '@/generated/types';
@@ -344,7 +345,10 @@ export function useSecurityActions({
     delete cleaned.tlsSettings;
     delete cleaned.realitySettings;
     if (next === 'tls') {
-      cleaned.tlsSettings = createTlsSettingsWithDefaultCert();
+      cleaned.tlsSettings =
+        current.network === 'xdrive'
+          ? XDriveTlsSettingsSchema.parse({})
+          : createTlsSettingsWithDefaultCert();
     }
     if (next === 'reality') {
       const reality = RealityStreamSettingsSchema.parse({}) as Record<string, unknown>;

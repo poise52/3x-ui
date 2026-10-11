@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useFormContext, useWatch } from 'react-hook-form';
-import { Alert, Button, Collapse, Form, Input, InputNumber, Select } from 'antd';
+import { Alert, Button, Collapse, Form, Input, InputNumber, Select, theme } from 'antd';
 import { FormField } from '@/components/form/rhf';
 import { JsonEditor } from '@/components/form';
 import { yandexDiskXDriveSettings } from '@/lib/xray/xdrive';
@@ -19,11 +19,14 @@ const TUNING = [
 
 export default function XDriveForm() {
   const { t } = useTranslation();
+  const { token } = theme.useToken();
   const { control, setValue, getValues } = useFormContext();
   const service = useWatch({ control, name: `${PATH}.service` });
   return (
     <>
-      <Alert type="info" showIcon title={t('pages.inbounds.form.xdriveHint')} />
+      <Form.Item wrapperCol={{ span: 24, offset: 0 }}>
+        <Alert type="info" showIcon title={t('pages.inbounds.form.xdriveHint')} />
+      </Form.Item>
       <FormField name={`${PATH}.service`} label={t('pages.inbounds.form.xdriveService')}>
         <Select
           options={[
@@ -91,19 +94,26 @@ export default function XDriveForm() {
         </>
       )}
       <Collapse
+        style={{ marginBottom: token.marginLG }}
         items={[
           {
             key: 'tuning',
             label: t('pages.inbounds.form.xdriveTuning'),
             children: (
               <>
-                {TUNING.map(([name, fallback]) => (
-                  <FormField key={name} name={`${PATH}.${name}`} label={name}>
+                {TUNING.map(([name, fallback], index) => (
+                  <FormField
+                    key={name}
+                    name={`${PATH}.${name}`}
+                    label={name}
+                    style={index === TUNING.length - 1 ? { marginBottom: 0 } : undefined}
+                  >
                     <InputNumber
                       min={0}
                       max={4294967295}
                       precision={0}
                       placeholder={String(fallback)}
+                      style={{ width: '100%' }}
                     />
                   </FormField>
                 ))}

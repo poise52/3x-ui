@@ -1,6 +1,7 @@
 import { InboundFormSchema } from '@/schemas/forms/inbound-form';
 import { OutboundFormSchema } from '@/schemas/forms/outbound-form';
 import { normalizeXdnsFinalMask } from '@/lib/xray/xdns-mask';
+import { xdriveClientTlsSettings } from '@/lib/xray/xdrive';
 import { describe, expect, it } from 'vitest';
 import {
   rawInboundToFormValues,
@@ -10,7 +11,7 @@ import {
   rawOutboundToFormValues,
   formValuesToWirePayload as outboundToWire,
 } from '@/lib/xray/outbound-form-adapter';
-import { XDriveStreamSettingsSchema } from '@/schemas/protocols/stream';
+import { XDriveStreamSettingsSchema, XDriveTlsSettingsSchema } from '@/schemas/protocols/stream';
 
 const xdriveSettings = {
   service: 'template',
@@ -41,6 +42,88 @@ const xdriveSettings = {
 const streamSettings = { network: 'xdrive', security: 'none', xdriveSettings };
 
 describe('XDRIVE configuration', () => {
+  it('keeps trusted CAs and client options when switching from server TLS to XDRIVE', () => {
+    const result = XDriveTlsSettingsSchema.parse(
+      xdriveClientTlsSettings({
+        serverName: 'storage.example.com',
+        settings: { fingerprint: 'chrome' },
+        certificates: [
+          { usage: 'encipherment', certificateFile: '/server.pem', keyFile: '/server.key' },
+          { usage: 'verify', certificateFile: '/storage-ca.pem' },
+        ],
+      }),
+    );
+    expect(result).toMatchObject({
+      serverName: 'storage.example.com',
+      fingerprint: 'chrome',
+      certificates: [{ usage: 'verify', certificateFile: '/storage-ca.pem' }],
+    });
+    expect(result.certificates).toHaveLength(1);
+    expect(result.certificates[0]).not.toHaveProperty('keyFile');
+  });
+  it('rejects empty trusted CA entries and reversed TLS version bounds', () => {
+    const emptyCa = XDriveTlsSettingsSchema.safeParse({
+      certificates: [{ usage: 'verify', useFile: false, certificate: [] }],
+    });
+    expect(emptyCa.success).toBe(false);
+    if (!emptyCa.success)
+      expect(emptyCa.error.issues.map((issue) => issue.path)).toContainEqual([
+        'certificates',
+        0,
+        'certificate',
+      ]);
+    const versions = XDriveTlsSettingsSchema.safeParse({ minVersion: '1.3', maxVersion: '1.2' });
+    expect(versions.success).toBe(false);
+    if (!versions.success)
+      expect(versions.error.issues.map((issue) => issue.path)).toContainEqual(['maxVersion']);
+  });
+  it('preserves client TLS options without requiring an inbound server certificate', () => {
+    const tlsStream = {
+      ...streamSettings,
+      security: 'tls',
+      tlsSettings: {
+        serverName: 'webdav.yandex.ru',
+        fingerprint: 'chrome',
+        alpn: ['h2'],
+        echConfigList: 'test-ech',
+        verifyPeerCertByName: 'webdav.yandex.ru',
+        pinnedPeerCertSha256: ['test-pin'],
+        minVersion: '1.2',
+        maxVersion: '1.3',
+        cipherSuites: 'TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256',
+        curvePreferences: ['X25519', 'P-256'],
+        disableSystemRoot: true,
+        enableSessionResumption: true,
+        masterKeyLog: '/tmp/xdrive-tls.keys',
+        certificates: [
+          {
+            usage: 'verify',
+            certificate: ['-----BEGIN CERTIFICATE-----', 'test-ca', '-----END CERTIFICATE-----'],
+          },
+          { usage: 'verify', certificateFile: '/etc/x-ui/storage-ca.pem' },
+        ],
+      },
+    };
+    const inbound = rawInboundToFormValues({
+      protocol: 'vless',
+      port: 8443,
+      settings: JSON.stringify({ clients: [], decryption: 'none' }),
+      streamSettings: JSON.stringify(tlsStream),
+    });
+    const inboundWire = JSON.parse(inboundToWire(InboundFormSchema.parse(inbound)).streamSettings);
+    expect(inboundWire).toMatchObject(tlsStream);
+    expect(inboundWire.tlsSettings.certificates[0]).not.toHaveProperty('key');
+    expect(inboundWire.tlsSettings.certificates[1]).not.toHaveProperty('keyFile');
+    const outbound = rawOutboundToFormValues({
+      protocol: 'vless',
+      tag: 'drive',
+      settings: { address: 'example.com', port: 443, id: '11111111-2222-4333-8444-555555555555' },
+      streamSettings: tlsStream,
+    });
+    expect(outboundToWire(OutboundFormSchema.parse(outbound)).streamSettings).toMatchObject(
+      tlsStream,
+    );
+  });
   it('preserves HTTP templates and secrets through inbound editing and saving', () => {
     const form = rawInboundToFormValues({
       protocol: 'vless',

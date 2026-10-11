@@ -7,6 +7,7 @@ import {
   WsStreamSettingsSchema,
   XHttpStreamSettingsSchema,
   XDriveStreamSettingsSchema,
+  XDriveTlsSettingsSchema,
 } from '@/schemas/protocols/stream';
 import { RealityStreamSettingsSchema, TlsStreamSettingsSchema } from '@/schemas/protocols/security';
 
@@ -75,7 +76,10 @@ export function fillStreamDefaults(stream: Record<string, unknown>): Record<stri
   }
   const sec = securitySchemaFor(security);
   if (sec) {
-    out[sec.key] = parseOrDefault(sec.schema, out[sec.key]);
+    out[sec.key] = parseOrDefault(
+      network === 'xdrive' && security === 'tls' ? XDriveTlsSettingsSchema : sec.schema,
+      out[sec.key],
+    );
   }
   return out;
 }

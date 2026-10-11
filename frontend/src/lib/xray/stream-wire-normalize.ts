@@ -355,6 +355,13 @@ export function normalizeStreamSettingsForWire(
   const tls = out.tlsSettings;
   if (isRecord(tls)) {
     out.tlsSettings = normalizeTlsForWire(tls);
+    const normalized = out.tlsSettings as Record<string, unknown>;
+    if (
+      out.network === 'xdrive' &&
+      Array.isArray(normalized.certificates) &&
+      normalized.certificates.length === 0
+    )
+      delete normalized.certificates;
   }
 
   const sockopt = out.sockopt;
